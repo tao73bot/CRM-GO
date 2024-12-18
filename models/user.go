@@ -11,5 +11,7 @@ type User struct {
 	Email     string     `gorm:"type:varchar(255);unique;not null"`
 	Password  string     `gorm:"type:varchar(255);not null"`
 	Role      string     `gorm:"type:VARCHAR(255);check:role IN('admin', 'user');default:'user'"`
-	Admin     Admin      `gorm:"foreignKey:AdminID;references:AdminID"`
+	// Admin     Admin      `gorm:"foreignKey:AdminID;references:AdminID"`
+	Customer  []Customer `gorm:"foreignKey:UserID;references:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Lead      []Lead     `gorm:"foreignKey:UserID;references:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }

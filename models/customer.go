@@ -10,6 +10,7 @@ type Customer struct {
 	UserID       uuid.UUID     `gorm:"type:uuid;not null"`
 	Address      string        `gorm:"type:varchar(255);not null"`
 	CompanyName  string        `gorm:"type:varchar(255);not null"`
-	Lead         Lead          `gorm:"foreignKey:LeadID;references:LeadID"`
-	User         User          `gorm:"foreignKey:UserID;references:UserID"`
+	// Lead         Lead          `gorm:"foreignKey:LeadID;references:LeadID"`
+	// User         User          `gorm:"foreignKey:UserID;references:UserID"`
+	Interactions []Interaction `gorm:"foreignKey:CustomerID;references:CustomerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }

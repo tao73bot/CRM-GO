@@ -10,6 +10,6 @@ type Interaction struct {
 	CustomerID    uuid.UUID `gorm:"type:uuid;not null"`
 	Type          string    `gorm:"type:VARCHAR(255);check:Type IN ('call', 'email', 'meeting', 'lunch', 'other');default:'call'"`
 	Notes         string    `gorm:"type:text"`
-	Lead          Lead      `gorm:"foreignKey:LeadID;references:LeadID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Customer      Customer  `gorm:"foreignKey:CustomerID;references:CustomerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	// Lead          Lead      `gorm:"foreignKey:LeadID;references:LeadID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	// Customer      Customer  `gorm:"foreignKey:CustomerID;references:CustomerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
