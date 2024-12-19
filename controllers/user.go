@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -77,23 +78,76 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), jwt.MapClaims{
-		"sub":  user.UserID,
-		"role": user.Role,
-		"exp":  time.Now().Add(time.Hour * 24).Unix(),
-	})
-	tokeString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	accessToken, err := GenerateAccessToken(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error generating token",
+			"error": "Error generating access token",
+		})
+		return
+	}
+	refreshToken, err := GenerateRefreshToken(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error generating refresh token",
 		})
 		return
 	}
 	// Set the token as a cookie
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("Authorization", tokeString, 3600*24, "", "", false, true)
+	c.SetCookie("Authorization", accessToken, 3600*24, "", "", false, true)
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Login successful",
-		"user":    user,
+		"message":      "Login successful",
+		"user":         user,
+		"token":        accessToken,
+		"refreshToken": refreshToken,
+	})
+}
+
+func GenerateAccessToken(user models.User) (string, error) {
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), jwt.MapClaims{
+		"sub":  user.UserID,
+		"role": user.Role,
+		"exp":  time.Now().Add(time.Hour * 24).Unix(),
+	})
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+}
+
+func GenerateRefreshToken(user models.User) (string, error) {
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), jwt.MapClaims{
+		"sub":  user.UserID,
+		"role": user.Role,
+		"exp":  time.Now().Add(time.Hour * 24 * 7).Unix(),
+	})
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+}
+
+func Logout(c *gin.Context) {
+	c.SetCookie("Authorization", "", -1, "", "", false, true)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Logout successful",
+	})
+}
+
+func IsUserLoggedIN(c *gin.Context) {
+	cookie, err := c.Cookie("Authorization")
+	fmt.Println(cookie)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
+	token, err := jwt.Parse(cookie, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+	fmt.Println(token)
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User is logged in",
 	})
 }
