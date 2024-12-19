@@ -28,6 +28,6 @@ go.work
 # Gin specific files
 gin-bin/
 
-tem
+tmp/
 .env
 go.sum
