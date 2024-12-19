@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tao73bot/A_simple_CRM/initializers"
+	"github.com/tao73bot/A_simple_CRM/routes"
 )
 
 func init() {
@@ -17,11 +18,6 @@ func main() {
 	fmt.Println("Starting the CRM application ...")
 
 	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Welcome to the CRM application",
-		})
-	})
-
+	routes.UserRoutes(r)
 	r.Run()
 }
