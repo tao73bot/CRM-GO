@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/tao73bot/A_simple_CRM/helpers"
 	"github.com/tao73bot/A_simple_CRM/initializers"
 	"github.com/tao73bot/A_simple_CRM/models"
 	"golang.org/x/crypto/bcrypt"
@@ -78,53 +79,39 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	accessToken, err := GenerateAccessToken(user)
+	token, refreshToken, err := helpers.GenerateAllTokens(user.Email, user.Name, user.Role, user.UserID.String())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error generating access token",
+			"error": result.Error.Error(),
 		})
 		return
 	}
-	refreshToken, err := GenerateRefreshToken(user)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error generating refresh token",
-		})
-		return
-	}
-	// Set the token as a cookie
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("Authorization", accessToken, 3600*24, "", "", false, true)
+	// Store the refresh token in the cookie
+	c.SetCookie("Authorization", refreshToken, 60*60*24*7, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{
-		"message":      "Login successful",
-		"user":         user,
-		"token":        accessToken,
-		"refreshToken": refreshToken,
+		"message": "Login successful",
+		"token":   token,
 	})
-}
-
-func GenerateAccessToken(user models.User) (string, error) {
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), jwt.MapClaims{
-		"sub":  user.UserID,
-		"role": user.Role,
-		"exp":  time.Now().Add(time.Hour * 24).Unix(),
-	})
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-}
-
-func GenerateRefreshToken(user models.User) (string, error) {
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), jwt.MapClaims{
-		"sub":  user.UserID,
-		"role": user.Role,
-		"exp":  time.Now().Add(time.Hour * 24 * 7).Unix(),
-	})
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
 
 func Logout(c *gin.Context) {
-	c.SetCookie("Authorization", "", -1, "", "", false, true)
+	accesstoken, exists := c.Request.Header["Authorization"]
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "No token found",
+		})
+		return
+	}
+	fmt.Println(accesstoken[0])
+	helpers.InvalidateToken(accesstoken[0])
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{
+	// 		"error": "Error logging out",
+	// 	})
+	// 	return
+	// }
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Logout successful",
+		"message": "Successfully logged out",
 	})
 }
 
@@ -149,5 +136,46 @@ func IsUserLoggedIN(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "User is logged in",
+	})
+}
+
+func GetUser(c *gin.Context) {
+	uid := uuid.MustParse(c.Param("uid"))
+	if err := helpers.MatchUserRoleToUid(c, uid); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	var user models.User
+	result := initializers.DB.Where("user_id = ?", uid).First(&user)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "User not found",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"user": user,
+	})
+}
+
+func GetUsers(c *gin.Context) {
+	if err := helpers.CheckUserRoles(c, "admin"); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	var users []models.User
+	result := initializers.DB.Find(&users)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error fetching users",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"users": users,
 	})
 }
