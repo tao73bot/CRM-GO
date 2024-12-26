@@ -24,6 +24,7 @@ func main() {
 	routes.UserRoutes(r)
 	routes.LeadRoutes(r)
 	routes.CustomerRoutes(r)
+	routes.InteractionRoutes(r)
 	url := ginSwagger.URL("http://localhost:3333/swagger/doc.json")
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 	r.Run()
