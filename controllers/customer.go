@@ -37,6 +37,12 @@ func CreateCustomer(c *gin.Context) {
 		})
 		return
 	}
+	if lead.UserID != uid {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "You are not authorized to create customer for this lead",
+		})
+		return
+	}
 	if lead.Status != "qualified" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Lead status must be 'qualified' to create customer",

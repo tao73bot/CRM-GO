@@ -28,7 +28,7 @@ func CreateInteractionWithLead(c *gin.Context) {
 	// Check if the lead exists
 	lid := uuid.MustParse(c.Param("lid"))
 	var lead models.Lead
-	result := initializers.DB.First(&lead, lid == lead.LeadID)
+	result := initializers.DB.First(&lead, lid)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Lead not found",

@@ -39,6 +39,13 @@ func SignUp(c *gin.Context) {
 		Email:    body.Email,
 		Password: string(hash),
 	}
+	x := initializers.DB.Where("email = ?", body.Email).First(&user).RowsAffected
+	if x > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "User already exists",
+		})
+		return
+	}
 	result := initializers.DB.Create(&user)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
